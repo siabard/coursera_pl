@@ -75,3 +75,91 @@ datatype move = Discard of card | Draw
 exception IllegalMove
 
 (* put your solutions for problem 2 here *)
+
+fun card_color (s: suit, r: rank) =
+    case s of
+	Clubs =>  Black
+      | Spades => Black	      
+      | Hearts => Red
+      | Diamonds => Red
+			
+				     
+			    
+fun card_value (s:suit, r:rank) =
+    case r of
+	Ace => 11
+      | Num i => i
+      | _ => 10
+
+fun remove_card (cs: card list, c: card, exn) =
+    case cs of
+	c'::cs' =>
+	if c' = c
+	then cs'
+	else c'::(remove_card ( cs', c, exn))
+      | _ => raise exn
+
+fun all_same_color (cards : card list ) =
+    case cards of
+	[] => true
+      | c::cs =>
+	let
+	    val const_color = card_color c
+	    fun has_same_color (cards : card list, clr: color) =
+		case cards of
+		    [] => true
+		  | c' :: cs' =>
+		    if card_color(c') = clr
+		    then has_same_color( cs', clr)
+		    else false
+	in
+	    has_same_color( cs, const_color )
+	end
+			   
+			   
+fun sum_cards (cards: card list) =
+    let
+	fun aux(acc : int, cards: card list) =
+	    case cards of
+		[] => acc
+	     | c::cs => aux( acc + card_value(c), cs)
+    in
+	aux(0, cards)
+    end
+
+fun score (held_cards: card list, goal : int ) =
+    let
+	val sum = sum_cards (held_cards)
+	val preliminary_score =
+	    if sum > goal
+	    then (sum - goal) * 3
+	    else goal - sum
+    in
+	if all_same_color(held_cards)
+	then preliminary_score div 2
+	else preliminary_score
+    end
+	    
+	    
+				
+fun officiate (card_list: card list, does : move list, goal: int ) =
+    let
+	fun game_helper( held_cards: card list,  cards : card list, dolist : move list ) =
+	    case dolist of
+		[] => held_cards
+	      | d::ds =>
+		case d of
+		    Discard c => game_helper( remove_card( held_cards, c, IllegalMove), cards, ds)
+		  | Draw => case card_list of
+				[] => held_cards
+			      | c::cs =>
+				let
+				    val drawed_held_cards = c::held_cards
+				in
+				    if sum_cards(drawed_held_cards) > goal
+				    then drawed_held_cards
+				    else game_helper( drawed_held_cards, cs ,ds)
+				end
+    in
+	score(game_helper([], card_list, does), goal)	      
+    end
